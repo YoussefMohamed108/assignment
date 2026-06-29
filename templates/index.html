@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Ethereum Fraud Detector</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #0f1117;
+      color: #e0e0e0;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+    }
+    .card {
+      background: #1a1d27;
+      border: 1px solid #2e3247;
+      border-radius: 12px;
+      padding: 2rem;
+      width: 100%;
+      max-width: 560px;
+    }
+    h1 { font-size: 1.4rem; color: #a78bfa; margin-bottom: 0.3rem; }
+    p.sub { font-size: 0.85rem; color: #6b7280; margin-bottom: 1.5rem; }
+    label { display: block; font-size: 0.8rem; color: #9ca3af; margin-bottom: 0.3rem; margin-top: 1rem; }
+    textarea {
+      width: 100%;
+      background: #0f1117;
+      border: 1px solid #2e3247;
+      border-radius: 8px;
+      color: #e0e0e0;
+      font-size: 0.85rem;
+      padding: 0.75rem;
+      resize: vertical;
+      min-height: 100px;
+      font-family: monospace;
+    }
+    textarea:focus { outline: none; border-color: #a78bfa; }
+    button {
+      margin-top: 1.25rem;
+      width: 100%;
+      padding: 0.75rem;
+      background: #7c3aed;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    button:hover { background: #6d28d9; }
+    #result {
+      margin-top: 1.25rem;
+      padding: 1rem;
+      border-radius: 8px;
+      display: none;
+      font-size: 0.9rem;
+    }
+    #result.fraud { background: #2d1b1b; border: 1px solid #ef4444; color: #f87171; }
+    #result.legit { background: #1b2d1b; border: 1px solid #22c55e; color: #4ade80; }
+    #result.error { background: #2d2415; border: 1px solid #f59e0b; color: #fbbf24; }
+    .label { font-size: 1.1rem; font-weight: 600; margin-bottom: 0.3rem; }
+    .prob { font-size: 0.82rem; opacity: 0.8; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>⟠ Ethereum Fraud Detector</h1>
+    <p class="sub">Paste the transaction feature values as comma-separated numbers.</p>
+
+    <label for="features">Feature Values (comma-separated)</label>
+    <textarea id="features" placeholder="e.g. 0.5, 1.2, 0, 3.4, ..."></textarea>
+
+    <button onclick="predict()">Analyze Transaction</button>
+
+    <div id="result">
+      <div class="label" id="result-label"></div>
+      <div class="prob" id="result-prob"></div>
+    </div>
+  </div>
+
+  <script>
+    async function predict() {
+      const raw = document.getElementById("features").value.trim();
+      const resultBox = document.getElementById("result");
+      const labelEl = document.getElementById("result-label");
+      const probEl = document.getElementById("result-prob");
+
+      resultBox.style.display = "none";
+      resultBox.className = "";
+
+      if (!raw) {
+        resultBox.style.display = "block";
+        resultBox.className = "error";
+        labelEl.textContent = "⚠ Please enter feature values.";
+        probEl.textContent = "";
+        return;
+      }
+
+      const features = raw.split(",").map(v => parseFloat(v.trim()));
+      if (features.some(isNaN)) {
+        resultBox.style.display = "block";
+        resultBox.className = "error";
+        labelEl.textContent = "⚠ Invalid input — only numbers allowed.";
+        probEl.textContent = "";
+        return;
+      }
+
+      try {
+        const res = await fetch("/predict", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ features })
+        });
+        const data = await res.json();
+
+        if (data.error) throw new Error(data.error);
+
+        resultBox.style.display = "block";
+        resultBox.className = data.prediction === 1 ? "fraud" : "legit";
+        labelEl.textContent = data.prediction === 1 ? "🚨 Fraudulent Transaction" : "✅ Legitimate Transaction";
+        probEl.textContent = `Fraud probability: ${data.fraud_probability}%`;
+      } catch (err) {
+        resultBox.style.display = "block";
+        resultBox.className = "error";
+        labelEl.textContent = "⚠ Error: " + err.message;
+        probEl.textContent = "";
+      }
+    }
+  </script>
+</body>
+</html>
