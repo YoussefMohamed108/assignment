@@ -1,136 +1,199 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Ethereum Fraud Detector</title>
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
     body {
-      font-family: 'Segoe UI', sans-serif;
-      background: #0f1117;
-      color: #e0e0e0;
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: #0b0d14;
+      color: #d1d5db;
       min-height: 100vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 2rem;
+      padding: 2rem 1rem 4rem;
     }
-    .card {
-      background: #1a1d27;
-      border: 1px solid #2e3247;
-      border-radius: 12px;
-      padding: 2rem;
-      width: 100%;
-      max-width: 560px;
+
+    header {
+      text-align: center;
+      margin-bottom: 2.5rem;
     }
-    h1 { font-size: 1.4rem; color: #a78bfa; margin-bottom: 0.3rem; }
-    p.sub { font-size: 0.85rem; color: #6b7280; margin-bottom: 1.5rem; }
-    label { display: block; font-size: 0.8rem; color: #9ca3af; margin-bottom: 0.3rem; margin-top: 1rem; }
-    textarea {
-      width: 100%;
-      background: #0f1117;
-      border: 1px solid #2e3247;
-      border-radius: 8px;
-      color: #e0e0e0;
+    header h1 {
+      font-size: 1.7rem;
+      color: #a78bfa;
+      letter-spacing: -0.02em;
+    }
+    header p {
+      margin-top: 0.4rem;
       font-size: 0.85rem;
-      padding: 0.75rem;
-      resize: vertical;
-      min-height: 100px;
-      font-family: monospace;
+      color: #6b7280;
     }
-    textarea:focus { outline: none; border-color: #a78bfa; }
-    button {
-      margin-top: 1.25rem;
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 1rem;
+      max-width: 1100px;
+      margin: 0 auto 2rem;
+    }
+
+    .field {
+      background: #13161f;
+      border: 1px solid #1f2336;
+      border-radius: 10px;
+      padding: 0.9rem 1rem;
+      transition: border-color 0.2s;
+    }
+    .field:focus-within { border-color: #7c3aed; }
+
+    .field label {
+      display: block;
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: #c4b5fd;
+      margin-bottom: 0.25rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .field .hint {
+      font-size: 0.7rem;
+      color: #4b5563;
+      margin-bottom: 0.4rem;
+      line-height: 1.3;
+    }
+    .field input {
       width: 100%;
-      padding: 0.75rem;
+      background: #0b0d14;
+      border: 1px solid #1f2336;
+      border-radius: 6px;
+      color: #e5e7eb;
+      font-size: 0.88rem;
+      padding: 0.45rem 0.6rem;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .field input:focus { border-color: #7c3aed; }
+    .field input::placeholder { color: #374151; }
+
+    .actions {
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+    button {
+      padding: 0.75rem 2.5rem;
       background: #7c3aed;
-      color: white;
+      color: #fff;
       border: none;
       border-radius: 8px;
       font-size: 0.95rem;
+      font-weight: 600;
       cursor: pointer;
-      transition: background 0.2s;
+      transition: background 0.2s, transform 0.1s;
     }
-    button:hover { background: #6d28d9; }
+    button:hover  { background: #6d28d9; }
+    button:active { transform: scale(0.98); }
+
     #result {
-      margin-top: 1.25rem;
-      padding: 1rem;
-      border-radius: 8px;
+      max-width: 480px;
+      margin: 0 auto;
+      padding: 1.2rem 1.5rem;
+      border-radius: 12px;
       display: none;
-      font-size: 0.9rem;
+      text-align: center;
     }
-    #result.fraud { background: #2d1b1b; border: 1px solid #ef4444; color: #f87171; }
-    #result.legit { background: #1b2d1b; border: 1px solid #22c55e; color: #4ade80; }
-    #result.error { background: #2d2415; border: 1px solid #f59e0b; color: #fbbf24; }
-    .label { font-size: 1.1rem; font-weight: 600; margin-bottom: 0.3rem; }
-    .prob { font-size: 0.82rem; opacity: 0.8; }
+    #result.fraud { background: #2a1212; border: 1px solid #dc2626; }
+    #result.legit { background: #0f2318; border: 1px solid #16a34a; }
+    #result.error { background: #1f1a0a; border: 1px solid #d97706; }
+
+    #result .verdict {
+      font-size: 1.25rem;
+      font-weight: 700;
+      margin-bottom: 0.35rem;
+    }
+    #result.fraud .verdict { color: #f87171; }
+    #result.legit .verdict { color: #4ade80; }
+    #result.error .verdict { color: #fbbf24; }
+
+    #result .prob {
+      font-size: 0.85rem;
+      color: #9ca3af;
+    }
+
+    .spinner { display: none; }
+    button.loading .spinner { display: inline-block; margin-left: 6px; }
   </style>
 </head>
 <body>
-  <div class="card">
-    <h1>⟠ Ethereum Fraud Detector</h1>
-    <p class="sub">Paste the transaction feature values as comma-separated numbers.</p>
 
-    <label for="features">Feature Values (comma-separated)</label>
-    <textarea id="features" placeholder="e.g. 0.5, 1.2, 0, 3.4, ..."></textarea>
+<header>
+  <h1>⟠ Ethereum Fraud Detector</h1>
+  <p>Fill in the account's transaction statistics below, then click Analyze.</p>
+</header>
 
-    <button onclick="predict()">Analyze Transaction</button>
-
-    <div id="result">
-      <div class="label" id="result-label"></div>
-      <div class="prob" id="result-prob"></div>
-    </div>
+<div class="form-grid" id="featureGrid">
+  {% for key, label, hint in features %}
+  <div class="field">
+    <label title="{{ label }}">{{ label }}</label>
+    <div class="hint">{{ hint }}</div>
+    <input type="number" step="any" id="feat_{{ loop.index0 }}"
+           data-key="{{ key }}" placeholder="0" />
   </div>
+  {% endfor %}
+</div>
 
-  <script>
-    async function predict() {
-      const raw = document.getElementById("features").value.trim();
-      const resultBox = document.getElementById("result");
-      const labelEl = document.getElementById("result-label");
-      const probEl = document.getElementById("result-prob");
+<div class="actions">
+  <button onclick="analyze(this)">
+    Analyze Transaction <span class="spinner">⏳</span>
+  </button>
+</div>
 
-      resultBox.style.display = "none";
-      resultBox.className = "";
+<div id="result">
+  <div class="verdict" id="verdict"></div>
+  <div class="prob"    id="prob"></div>
+</div>
 
-      if (!raw) {
-        resultBox.style.display = "block";
-        resultBox.className = "error";
-        labelEl.textContent = "⚠ Please enter feature values.";
-        probEl.textContent = "";
-        return;
-      }
+<script>
+  async function analyze(btn) {
+    const inputs = document.querySelectorAll('#featureGrid input');
+    const features = Array.from(inputs).map(i => parseFloat(i.value) || 0);
 
-      const features = raw.split(",").map(v => parseFloat(v.trim()));
-      if (features.some(isNaN)) {
-        resultBox.style.display = "block";
-        resultBox.className = "error";
-        labelEl.textContent = "⚠ Invalid input — only numbers allowed.";
-        probEl.textContent = "";
-        return;
-      }
+    const resultBox = document.getElementById('result');
+    const verdict   = document.getElementById('verdict');
+    const prob      = document.getElementById('prob');
 
-      try {
-        const res = await fetch("/predict", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ features })
-        });
-        const data = await res.json();
+    resultBox.style.display = 'none';
+    btn.disabled = true;
+    btn.classList.add('loading');
 
-        if (data.error) throw new Error(data.error);
+    try {
+      const res  = await fetch('/predict', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ features })
+      });
+      const data = await res.json();
 
-        resultBox.style.display = "block";
-        resultBox.className = data.prediction === 1 ? "fraud" : "legit";
-        labelEl.textContent = data.prediction === 1 ? "🚨 Fraudulent Transaction" : "✅ Legitimate Transaction";
-        probEl.textContent = `Fraud probability: ${data.fraud_probability}%`;
-      } catch (err) {
-        resultBox.style.display = "block";
-        resultBox.className = "error";
-        labelEl.textContent = "⚠ Error: " + err.message;
-        probEl.textContent = "";
-      }
+      if (data.error) throw new Error(data.error);
+
+      resultBox.className = data.prediction === 1 ? 'fraud' : 'legit';
+      verdict.textContent  = data.prediction === 1
+        ? '🚨 Fraudulent Account Detected'
+        : '✅ Account Appears Legitimate';
+      prob.textContent = `Fraud probability: ${data.fraud_probability}%`;
+    } catch (err) {
+      resultBox.className = 'error';
+      verdict.textContent  = '⚠ ' + err.message;
+      prob.textContent     = '';
     }
-  </script>
+
+    resultBox.style.display = 'block';
+    btn.disabled = false;
+    btn.classList.remove('loading');
+    resultBox.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+</script>
+
 </body>
 </html>
